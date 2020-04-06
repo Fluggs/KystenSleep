@@ -40,7 +40,7 @@ public class BedListener implements Listener {
             playersInBed.get(world).add(e.getPlayer());
 
             for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " entered bed. (" + playersInBed.get(world).size() + "/" + playersNeeded.get(world) + ")"));
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " entered bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
             }
 
             skipNight(world);
@@ -52,7 +52,7 @@ public class BedListener implements Listener {
         World world = e.getPlayer().getWorld();
         playersInBed.get(world).remove(e.getPlayer());
         for(Player player : world.getPlayers()) {
-            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left bed. (" + playersInBed.get(world).size() + "/" + playersNeeded.get(world) + ")"));
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
         }
     }
 
@@ -65,12 +65,12 @@ public class BedListener implements Listener {
 
         if(playersInBed.get(worldFrom).size() > 0) {
             for(Player player : worldFrom.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left the world. (" + playersInBed.get(worldFrom).size() + "/" + playersNeeded.get(worldFrom) + ")"));
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left the world. (" + playersInBed.get(worldFrom).size() + "/" + (int) Math.ceil(playersNeeded.get(worldFrom)) + ")"));
             }
         }
         if(playersInBed.get(worldTo).size() > 0) {
             for(Player player : worldTo.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left the world. (" + playersInBed.get(worldTo).size() + "/" + playersNeeded.get(worldTo) + ")"));
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left the world. (" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")"));
             }
         }
     }
@@ -82,7 +82,7 @@ public class BedListener implements Listener {
 
         if(playersInBed.get(world).size() > 0) {
             for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " joined the server. (" + playersInBed.get(world).size() + "/" + playersNeeded.get(world) + ")"));
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " joined the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
             }
         }
     }
@@ -93,7 +93,7 @@ public class BedListener implements Listener {
         playersNeeded.put(world, playersNeeded.get(world) - sleepPct);
         if(playersInBed.get(world).size() > 0) {
             for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left the server. (" + playersInBed.get(world).size() + "/" + playersNeeded.get(world) + ")"));
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
             }
             skipNight(world);
         }
