@@ -13,19 +13,20 @@ import org.bukkit.event.player.*;
 
 public class BedListener implements Listener {
     private Map<World, List<Player>> playersInBed = new HashMap<>();
-    private Map<World, Integer> playersNeeded = new HashMap<>();
+    private Map<World, Double> playersNeeded = new HashMap<>();
     private double sleepPct;
 
     public BedListener(KystenSleep instance) {
         sleepPct = instance.config.getDouble("sleepPercentage");
         for(World world : Bukkit.getWorlds()) {
             playersInBed.put(world, new ArrayList<>());
+            playersNeeded.put(world, 0.0);
         }
     }
 
     //function that checks if the needed percentage in the world is reached and if yes, skips the night
     private void skipNight(World world) {
-        playersNeeded.put(world, (int) Math.ceil(world.getPlayers().size() * sleepPct));
+        //playersNeeded.put(world, world.getPlayers().size() * sleepPct);
         if(playersInBed.get(world).size() >= playersNeeded.get(world)) {
             world.setTime(world.getTime() + 24000 - (world.getTime() % 24000));
             playersInBed.get(world).clear();
@@ -37,7 +38,6 @@ public class BedListener implements Listener {
         if(e.getBedEnterResult() == PlayerBedEnterEvent.BedEnterResult.OK) {
             World world = e.getPlayer().getWorld();
             playersInBed.get(world).add(e.getPlayer());
-            Bukkit.broadcastMessage("Sleeping: " + playersInBed.get(world) + " / In World: " + world.getPlayers().size() + " / Needed: " + playersNeeded.get(world));
 
             for(Player player : world.getPlayers()) {
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " entered bed. (" + playersInBed.get(world).size() + "/" + playersNeeded.get(world) + ")"));
@@ -60,8 +60,8 @@ public class BedListener implements Listener {
     private void onWorldChange(PlayerChangedWorldEvent e) {
         World worldFrom = e.getFrom();
         World worldTo = e.getPlayer().getWorld();
-        playersNeeded.put(worldFrom, (int) Math.ceil(worldFrom.getPlayers().size() * sleepPct));
-        playersNeeded.put(worldTo, (int) Math.ceil(worldTo.getPlayers().size() * sleepPct));
+        playersNeeded.put(worldFrom, playersNeeded.get(worldFrom) - sleepPct);
+        playersNeeded.put(worldTo, playersNeeded.get(worldTo) + sleepPct);
 
         if(playersInBed.get(worldFrom).size() > 0) {
             for(Player player : worldFrom.getPlayers()) {
@@ -78,7 +78,7 @@ public class BedListener implements Listener {
     @EventHandler
     private void onPlayerJoin(PlayerJoinEvent e) {
         World world = e.getPlayer().getWorld();
-        playersNeeded.put(world, (int) Math.ceil(world.getPlayers().size() * sleepPct));
+        playersNeeded.put(world, playersNeeded.get(world) + sleepPct);
 
         if(playersInBed.get(world).size() > 0) {
             for(Player player : world.getPlayers()) {
@@ -90,7 +90,7 @@ public class BedListener implements Listener {
     @EventHandler
     private void onPlayerQuit(PlayerQuitEvent e) {
         World world = e.getPlayer().getWorld();
-        playersNeeded.put(world, (int) Math.ceil(world.getPlayers().size() * sleepPct));
+        playersNeeded.put(world, playersNeeded.get(world) - sleepPct);
         if(playersInBed.get(world).size() > 0) {
             for(Player player : world.getPlayers()) {
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(e.getPlayer().getName() + " left the server. (" + playersInBed.get(world).size() + "/" + playersNeeded.get(world) + ")"));
