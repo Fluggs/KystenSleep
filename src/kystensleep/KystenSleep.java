@@ -35,11 +35,10 @@ public class KystenSleep extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(command.getName().equalsIgnoreCase("sleeplist")) {
             if(sender instanceof Player) {
-                sender.sendMessage("Players sleeping in your world: " + bl.playersInBed.get(((Player) sender).getWorld()).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")));
+                sender.sendMessage("§3Players sleeping in your world: §b" + bl.playersInBed.get(((Player) sender).getWorld()).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")));
                 return true;
             }
         }
-
         return false;
     }
 }

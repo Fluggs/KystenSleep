@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.scheduler.BukkitScheduler;
 
 public class BedListener implements Listener {
@@ -47,7 +48,7 @@ public class BedListener implements Listener {
         if(playersInBed.get(world).size() >= playersNeeded.get(world)) {
             world.setTime(world.getTime() + 24000 - (world.getTime() % 24000));
             for(Player player : world.getPlayers()) {
-                player.sendMessage(playersInBed.get(world).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")) + " slept.");
+                player.sendMessage("§b" + playersInBed.get(world).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")) + "§3 slept.");
             }
             playersInBed.get(world).clear();
         }
@@ -57,6 +58,7 @@ public class BedListener implements Listener {
     private void onBedEnter(PlayerBedEnterEvent e) {
         if(e.getBedEnterResult() == PlayerBedEnterEvent.BedEnterResult.OK) {
             World world = e.getPlayer().getWorld();
+
             playersInBed.get(world).add(e.getPlayer());
             actbarMsg(world, "§b" + e.getPlayer().getName() + "§3 entered bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             checkSkipNight(world);
@@ -70,7 +72,7 @@ public class BedListener implements Listener {
 
         if((world.getTime() % 24000) < 1000) {
             actbarMsg(world, "§2Good Morning :)");
-        } else if(playersInBed.get(world).size() + 1 >= playersNeeded.get(world)) {
+        } else if(playersInBed.get(world).size() + sleepPct >= playersNeeded.get(world)) {
             actbarMsg(world, "§c" + e.getPlayer().getName() + "§4 left bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
         } else {
             actbarMsg(world, "§b" + e.getPlayer().getName() + "§3 left bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
@@ -90,7 +92,7 @@ public class BedListener implements Listener {
             checkSkipNight(worldFrom);
         }
         if(playersInBed.get(worldTo).size() > 0) {
-            if(playersInBed.get(worldTo).size() + 1 >= playersNeeded.get(worldTo)) {
+            if(playersInBed.get(worldTo).size() + sleepPct >= playersNeeded.get(worldTo)) {
                 actbarMsg(worldTo, "§c" + e.getPlayer().getName() + "§4 joined the world. (" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")");
             } else {
                 actbarMsg(worldTo, "§b" + e.getPlayer().getName() + "§3 joined the world. (" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")");
@@ -104,7 +106,7 @@ public class BedListener implements Listener {
         playersNeeded.put(world, playersNeeded.get(world) + sleepPct);
 
         if(playersInBed.get(world).size() > 0) {
-            if(playersInBed.get(world).size() + 1 >= playersNeeded.get(world)) {
+            if(playersInBed.get(world).size() + sleepPct >= playersNeeded.get(world)) {
                 actbarMsg(world, "§c" + e.getPlayer().getName() + "§4 joined the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             } else {
                 actbarMsg(world, "§b" + e.getPlayer().getName() + "§3 joined the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
@@ -121,5 +123,11 @@ public class BedListener implements Listener {
             actbarMsg(world, "§b" + e.getPlayer().getName() + "§3 left the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             checkSkipNight(world);
         }
+    }
+
+    @EventHandler
+    private void worldLoad(WorldLoadEvent e) {
+        playersInBed.put(e.getWorld(), new ArrayList<>());
+        playersNeeded.put(e.getWorld(), 0.0);
     }
 }
