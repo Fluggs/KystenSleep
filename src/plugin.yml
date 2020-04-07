@@ -2,3 +2,7 @@ name: KystenSleep
 version: 0.0.1
 author: Costamiri
 main: kystensleep.KystenSleep
+commands:
+  sleeplist:
+    description: Lists the players in your world currently sleeping.
+    usage: /sleeplist

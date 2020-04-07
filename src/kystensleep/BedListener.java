@@ -1,11 +1,13 @@
 package kystensleep;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,7 +15,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.scheduler.BukkitScheduler;
 
 public class BedListener implements Listener {
-    private Map<World, List<Player>> playersInBed = new HashMap<>();
+    public Map<World, List<Player>> playersInBed = new HashMap<>();
     private Map<World, Double> playersNeeded = new HashMap<>();
     private double sleepPct;
     KystenSleep ks;
@@ -27,13 +29,17 @@ public class BedListener implements Listener {
         }
     }
 
+    private void actbarMsg(World world, String msg) {
+        for(Player player : world.getPlayers()) {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
+        }
+    }
+
     private void checkSkipNight(World world) {
         if(playersInBed.get(world).size() >= playersNeeded.get(world)) {
-            for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§2All players sleeping ✓"));
-            }
+            actbarMsg(world, "§2Enough players sleeping ✓");
             BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-            scheduler.scheduleSyncDelayedTask(ks, () -> skipNight(world), 70L);
+            scheduler.scheduleSyncDelayedTask(ks, () -> skipNight(world), ks.config.getLong("sleepDuration"));
         }
     }
 
@@ -41,7 +47,7 @@ public class BedListener implements Listener {
         if(playersInBed.get(world).size() >= playersNeeded.get(world)) {
             world.setTime(world.getTime() + 24000 - (world.getTime() % 24000));
             for(Player player : world.getPlayers()) {
-                player.sendMessage("§6Good Morning!");
+                player.sendMessage(playersInBed.get(world).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")) + " slept.");
             }
             playersInBed.get(world).clear();
         }
@@ -52,11 +58,7 @@ public class BedListener implements Listener {
         if(e.getBedEnterResult() == PlayerBedEnterEvent.BedEnterResult.OK) {
             World world = e.getPlayer().getWorld();
             playersInBed.get(world).add(e.getPlayer());
-
-            for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b" + e.getPlayer().getName() + "§3 entered bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
-            }
-
+            actbarMsg(world, "§b" + e.getPlayer().getName() + "§3 entered bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             checkSkipNight(world);
         }
     }
@@ -65,18 +67,13 @@ public class BedListener implements Listener {
     private void onBedLeave(PlayerBedLeaveEvent e) {
         World world = e.getPlayer().getWorld();
         playersInBed.get(world).remove(e.getPlayer());
+
         if((world.getTime() % 24000) < 1000) {
-            for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§2Good Morning :)"));
-            }
+            actbarMsg(world, "§2Good Morning :)");
         } else if(playersInBed.get(world).size() + 1 >= playersNeeded.get(world)) {
-            for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§c" + e.getPlayer().getName() + "§4 left bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
-            }
+            actbarMsg(world, "§c" + e.getPlayer().getName() + "§4 left bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
         } else {
-            for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b" + e.getPlayer().getName() + "§3 left bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
-            }
+            actbarMsg(world, "§b" + e.getPlayer().getName() + "§3 left bed. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
         }
 
     }
@@ -89,20 +86,14 @@ public class BedListener implements Listener {
         playersNeeded.put(worldTo, playersNeeded.get(worldTo) + sleepPct);
 
         if(playersInBed.get(worldFrom).size() > 0) {
-            for(Player player : worldFrom.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b" + e.getPlayer().getName() + "§3 left the world. (" + playersInBed.get(worldFrom).size() + "/" + (int) Math.ceil(playersNeeded.get(worldFrom)) + ")"));
-            }
+            actbarMsg(worldFrom, "§b" + e.getPlayer().getName() + "§3 left the world. (" + playersInBed.get(worldFrom).size() + "/" + (int) Math.ceil(playersNeeded.get(worldFrom)) + ")");
             checkSkipNight(worldFrom);
         }
         if(playersInBed.get(worldTo).size() > 0) {
             if(playersInBed.get(worldTo).size() + 1 >= playersNeeded.get(worldTo)) {
-                for(Player player : worldTo.getPlayers()) {
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§c" + e.getPlayer().getName() + "§4 joined the world. (" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")"));
-                }
+                actbarMsg(worldTo, "§c" + e.getPlayer().getName() + "§4 joined the world. (" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")");
             } else {
-                for(Player player : worldTo.getPlayers()) {
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b" + e.getPlayer().getName() + "§3 joined the world. (" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")"));
-                }
+                actbarMsg(worldTo, "§b" + e.getPlayer().getName() + "§3 joined the world. (" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")");
             }
         }
     }
@@ -114,13 +105,9 @@ public class BedListener implements Listener {
 
         if(playersInBed.get(world).size() > 0) {
             if(playersInBed.get(world).size() + 1 >= playersNeeded.get(world)) {
-                for(Player player : world.getPlayers()) {
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§c" + e.getPlayer().getName() + "§4 joined the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
-                }
+                actbarMsg(world, "§c" + e.getPlayer().getName() + "§4 joined the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             } else {
-                for(Player player : world.getPlayers()) {
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b" + e.getPlayer().getName() + "§3 joined the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
-                }
+                actbarMsg(world, "§b" + e.getPlayer().getName() + "§3 joined the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             }
         }
     }
@@ -129,10 +116,9 @@ public class BedListener implements Listener {
     private void onPlayerQuit(PlayerQuitEvent e) {
         World world = e.getPlayer().getWorld();
         playersNeeded.put(world, playersNeeded.get(world) - sleepPct);
+
         if(playersInBed.get(world).size() > 0) {
-            for(Player player : world.getPlayers()) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("§b" + e.getPlayer().getName() + "§3 left the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")"));
-            }
+            actbarMsg(world, "§b" + e.getPlayer().getName() + "§3 left the server. (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             checkSkipNight(world);
         }
     }
