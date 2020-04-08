@@ -21,7 +21,13 @@ public class KystenSleep extends JavaPlugin {
 
         // Config
         config.addDefault("sleepPercentage", 0.5);
-        config.addDefault("sleepDuration", 70L);
+        config.addDefault("sleepDuration", 100L);
+        config.addDefault("bedEnterMsg", "entered bed.");
+        config.addDefault("bedLeaveMsg", "left bed.");
+        config.addDefault("worldJoinMsg", "joined the world.");
+        config.addDefault("worldLeaveMsg", "left the world.");
+        config.addDefault("serverJoinMsg", "joined the server.");
+        config.addDefault("serverLeaveMsg", "left the server.");
         config.options().copyDefaults(true);
         saveConfig();
     }
