@@ -36,19 +36,18 @@ public class BedListener implements Listener {
         }
     }
 
-    private void checkSkipNight(World world) {
-        if(playersInBed.get(world).size() >= playersNeeded.get(world)) {
-            actbarMsg(world, "§2Enough players sleeping ✓");
-            BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
-            scheduler.scheduleSyncDelayedTask(ks, () -> skipNight(world), ks.config.getLong("sleepDuration"));
-        }
+    private void scheduleSkipping(World world) {
+        BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
+        scheduler.scheduleSyncDelayedTask(ks, () -> skipNight(world), ks.config.getLong("sleepDuration"));
     }
 
     private void skipNight(World world) {
         if(playersInBed.get(world).size() >= playersNeeded.get(world)) {
             world.setTime(world.getTime() + 24000 - (world.getTime() % 24000));
+            world.setStorm(false);
+            world.setThundering(false);
             for(Player player : world.getPlayers()) {
-                player.sendMessage("§b" + playersInBed.get(world).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")) + "§f slept.");
+                player.sendMessage(world.getName() + ": §3" + playersInBed.get(world).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")) + "§r slept.");
             }
             playersInBed.get(world).clear();
         }
@@ -60,8 +59,11 @@ public class BedListener implements Listener {
             World world = e.getPlayer().getWorld();
 
             playersInBed.get(world).add(e.getPlayer());
-            actbarMsg(world, "§b" + e.getPlayer().getName() + "§f " + ks.config.getString("bedEnterMsg") + " §b(" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
-            checkSkipNight(world);
+            if(playersInBed.get(world).size() >= playersNeeded.get(world)) {
+                actbarMsg(world, "§2" + e.getPlayer().getName() + " " + ks.config.getString("bedEnterMsg") + " (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
+                scheduleSkipping(world);
+            } else
+                actbarMsg(world, "§3" + e.getPlayer().getName() + "§r " + ks.config.getString("bedEnterMsg") + " §3(" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
         }
     }
 
@@ -75,9 +77,8 @@ public class BedListener implements Listener {
         } else if(playersInBed.get(world).size() + 1 >= playersNeeded.get(world)) {
             actbarMsg(world, "§c" + e.getPlayer().getName() + "§4 " + ks.config.getString("bedLeaveMsg") + " (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
         } else {
-            actbarMsg(world, "§b" + e.getPlayer().getName() + "§f " + ks.config.getString("bedLeaveMsg") + " §b(" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
+            actbarMsg(world, "§3" + e.getPlayer().getName() + "§r " + ks.config.getString("bedLeaveMsg") + " §3(" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
         }
-
     }
 
     @EventHandler
@@ -88,12 +89,14 @@ public class BedListener implements Listener {
         playersNeeded.put(worldTo, playersNeeded.get(worldTo) + sleepPct);
 
         if(playersInBed.get(worldFrom).size() > 0) {
-            actbarMsg(worldFrom, "§b" + e.getPlayer().getName() + "§f " + ks.config.getString("worldLeaveMsg") + " §b(" + playersInBed.get(worldFrom).size() + "/" + (int) Math.ceil(playersNeeded.get(worldFrom)) + ")");
-            checkSkipNight(worldFrom);
+            if(playersInBed.get(worldFrom).size() >= playersNeeded.get(worldFrom)) {
+                actbarMsg(worldFrom, "§2" + e.getPlayer().getName() + " " + ks.config.getString("worldLeaveMsg") + " (" + playersInBed.get(worldFrom).size() + "/" + (int) Math.ceil(playersNeeded.get(worldFrom)) + ")");
+                scheduleSkipping(worldFrom);
+            } else actbarMsg(worldFrom, "§3" + e.getPlayer().getName() + "§r " + ks.config.getString("worldLeaveMsg") + " §3(" + playersInBed.get(worldFrom).size() + "/" + (int) Math.ceil(playersNeeded.get(worldFrom)) + ")");
         }
         if(playersInBed.get(worldTo).size() > 0) {
             if(playersInBed.get(worldTo).size() + sleepPct < playersNeeded.get(worldTo)) {
-                actbarMsg(worldTo, "§b" + e.getPlayer().getName() + "§f " + ks.config.getString("worldJoinMsg") + " §b(" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")");
+                actbarMsg(worldTo, "§3" + e.getPlayer().getName() + "§r " + ks.config.getString("worldJoinMsg") + " §3(" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")");
             } else if(playersInBed.get(worldTo).size() < playersNeeded.get(worldTo)) {
                 actbarMsg(worldTo, "§c" + e.getPlayer().getName() + "§4 " + ks.config.getString("worldJoinMsg") + " (" + playersInBed.get(worldTo).size() + "/" + (int) Math.ceil(playersNeeded.get(worldTo)) + ")");
             }
@@ -107,7 +110,7 @@ public class BedListener implements Listener {
 
         if(playersInBed.get(world).size() > 0) {
             if(playersInBed.get(world).size() + sleepPct < playersNeeded.get(world)) {
-                actbarMsg(world, "§b" + e.getPlayer().getName() + "§f " + ks.config.getString("serverJoinMsg") + " §b(" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
+                actbarMsg(world, "§3" + e.getPlayer().getName() + "§r " + ks.config.getString("serverJoinMsg") + " §3(" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             } else if(playersInBed.get(world).size() < playersNeeded.get(world)) {
                 actbarMsg(world, "§c" + e.getPlayer().getName() + "§4 " + ks.config.getString("serverJoinMsg") + " (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
             }
@@ -120,8 +123,10 @@ public class BedListener implements Listener {
         playersNeeded.put(world, playersNeeded.get(world) - sleepPct);
 
         if(playersInBed.get(world).size() > 0) {
-            actbarMsg(world, "§b" + e.getPlayer().getName() + "§f " + ks.config.getString("serverLeaveMsg") + " §b(" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
-            checkSkipNight(world);
+            if(playersInBed.get(world).size() >= playersNeeded.get(world)) {
+                actbarMsg(world, "§2" + e.getPlayer().getName() + " " + ks.config.getString("serverLeaveMsg") + " (" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
+                scheduleSkipping(world);
+            } else actbarMsg(world, "§3" + e.getPlayer().getName() + "§r " + ks.config.getString("serverLeaveMsg") + " §3(" + playersInBed.get(world).size() + "/" + (int) Math.ceil(playersNeeded.get(world)) + ")");
         }
     }
 

@@ -7,6 +7,7 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class KystenSleep extends JavaPlugin {
@@ -28,6 +29,7 @@ public class KystenSleep extends JavaPlugin {
         config.addDefault("worldLeaveMsg", "left the world.");
         config.addDefault("serverJoinMsg", "joined the server.");
         config.addDefault("serverLeaveMsg", "left the server.");
+        config.addDefault("noPlayersSleepingMsg", "No players sleeping in your world.");
         config.options().copyDefaults(true);
         saveConfig();
     }
@@ -41,7 +43,9 @@ public class KystenSleep extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(command.getName().equalsIgnoreCase("sleeplist")) {
             if(sender instanceof Player) {
-                sender.sendMessage("§fPlayers sleeping in your world: §b" + bl.playersInBed.get(((Player) sender).getWorld()).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")));
+                if(bl.playersInBed.get(((Player) sender).getWorld()).size() > 0)
+                    sender.sendMessage("Players sleeping in your world: §b" + bl.playersInBed.get(((Player) sender).getWorld()).stream().map(HumanEntity::getName).collect(Collectors.joining(", ")));
+                else sender.sendMessage(Objects.requireNonNull(config.getString("noPlayersSleepingMsg")));
                 return true;
             }
         }
